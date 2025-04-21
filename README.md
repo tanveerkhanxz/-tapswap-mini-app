@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TapSwap - Telegram Mini App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0E1621;
+            color: #fff;
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+        }
+        
+        .header {
+            background-color: #17212B;
+            border-bottom: 1px solid #293847;
+        }
+        
+        .coin {
+            width: 180px;
+            height: 180px;
+            background-color: #FFD700;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.1s;
+        }
+        
+        .coin:active {
+            transform: scale(0.95);
+        }
+        
+        .coin::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+        }
+        
+        .coin.animate::before {
+            animation: shine 0.5s;
+        }
+        
+        @keyframes shine {
+            to {
+                transform: translateX(100%);
+            }
+        }
+        
+        .coin-text {
+            font-weight: bold;
+            color: #996515;
+            font-size: 32px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .coin-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            pointer-events: none;
+        }
+        
+        .tab-content {
+            display: none;
+            min-height: 400px;
+            padding-bottom: 70px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #17212B;
+            border-top: 1px solid #293847;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 0;
+            color: #8A9AA8;
+            font-size: 12px;
+        }
+        
+        .nav-item.active {
+            color: #5288C1;
+        }
+        
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .challenge-item, .upgrade-item, .referral-item {
+            background-color: #17212B;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .challenge-icon, .upgrade-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #1E2C3A;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #FFD700;
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        
+        .leaderboard-item {
+            background-color: #17212B;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .rank {
+            width: 30px;
+            height: 30px;
+            background-color: #1E2C3A;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+        }
+        
+        .rank-1 {
+            background-color: #FFD700;
+            color: #333;
+        }
+        
+        .rank-2 {
+            background-color: #C0C0C0;
+            color: #333;
+        }
+        
+        .rank-3 {
+            background-color: #CD7F32;
+            color: #333;
+        }
+        
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #1E2C3A;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            color: #5288C1;
+        }
+        
+        .profile-stats {
+            background-color: #17212B;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #293847;
+        }
+        
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background-color: #1E2C3A;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #5288C1;
+            border-radius: 3px;
+        }
+        
+        .level-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #5288C1;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #FF3B30;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .city-btn {
+            background-color: #5288C1;
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .city-btn i {
+            margin-right: 6px;
+        }
+        
+        .tappy-town-ad {
+            background-color: #17212B;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tappy-town-ad::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(23, 33, 43, 0), #17212B);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header fixed top-0 left-0 right-0 z-10 max-w-screen-sm mx-auto">
+        <div class="flex justify-between items-center px-4 py-3">
+            <div class="flex items-center">
+                <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1fa99.svg" alt="Coin" class="w-6 h-6 mr-2">
+                <span class="text-lg font-bold">TapSwap</span>
+            </div>
+            <div class="flex items-center">
+                <div class="flex items-center mr-4">
+                    <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-5 h-5 mr-1">
+                    <span id="balance" class="font-bold">0</span>
+                </div>
+                <div class="relative">
+                    <i class="fas fa-bell text-gray-400 text-xl"></i>
+                    <div class="notification-badge">2</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content mt-14 px-4 pb-20 flex-grow">
+        <!-- Tap Tab -->
+        <div id="tap-tab" class="tab-content active">
+            <div class="flex flex-col items-center justify-center py-4">
+                <div class="text-center mb-6">
+                    <h1 class="text-xl font-bold">Tap to Earn</h1>
+                    <p class="text-gray-400 text-sm">Tap the coin to earn TAPS</p>
+                </div>
+                
+                <div id="coin" class="coin mb-6">
+                    <span class="coin-text">TAPS</span>
+                </div>
+                
+                <div class="w-full">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-400">Session Progress</span>
+                        <span id="session-progress" class="text-sm">0/500</span>
+                    </div>
+                    <div class="progress-bar mb-4">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="city-btn">
+                    <i class="fas fa-building"></i>
+                    <span>Visit Tappy Town</span>
+                </div>
+                
+                <div class="tappy-town-ad mt-6">
+                    <div class="flex">
+                        <div>
+                            <h3 class="font-bold mb-2">Tappy Town</h3>
+                            <p class="text-sm text-gray-400 mb-2">Build your own city, upgrade buildings, earn passive rewards!</p>
+                            <div class="flex items-center">
+                                <i class="fas fa-gem text-purple-400 mr-2"></i>
+                                <span class="text-sm">5 gems available</span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 ml-4">
+                            <i class="fas fa-city text-3xl text-blue-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenges Tab -->
+        <div id="challenges-tab" class="tab-content">
+            <div class="py-4">
+                <h2 class="text-lg font-bold mb-4">Daily Challenges</h2>
+                
+                <div class="challenge-item">
+                    <div class="flex items-center">
+                        <div class="challenge-icon">
+                            <i class="fas fa-hand-pointer"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Tapping Master</h3>
+                            <p class="text-sm text-gray-400">Tap 100 times today</p>
+                            <div class="progress-bar mt-2" style="width: 120px">
+                                <div class="progress-fill" style="width: 45%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">50</span>
+                    </div>
+                </div>
+                
+                <div class="challenge-item">
+                    <div class="flex items-center">
+                        <div class="challenge-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Invite Friends</h3>
+                            <p class="text-sm text-gray-400">Invite 3 friends to join TapSwap</p>
+                            <div class="progress-bar mt-2" style="width: 120px">
+                                <div class="progress-fill" style="width: 33%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">100</span>
+                    </div>
+                </div>
+                
+                <div class="challenge-item">
+                    <div class="flex items-center">
+                        <div class="challenge-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Watch a Video</h3>
+                            <p class="text-sm text-gray-400">Watch a promotional video</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">25</span>
+                    </div>
+                </div>
+                
+                <div class="challenge-item">
+                    <div class="flex items-center">
+                        <div class="challenge-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Daily Login</h3>
+                            <p class="text-sm text-gray-400">Login for 5 consecutive days</p>
+                            <div class="progress-bar mt-2" style="width: 120px">
+                                <div class="progress-fill" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">75</span>
+                    </div>
+                </div>
+                
+                <h2 class="text-lg font-bold mt-6 mb-4">Special Events</h2>
+                
+                <div class="challenge-item">
+                    <div class="flex items-center">
+                        <div class="challenge-icon bg-purple-800">
+                            <i class="fas fa-trophy text-yellow-300"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Weekend Challenge</h3>
+                            <p class="text-sm text-gray-400">Earn 1000 TAPS this weekend</p>
+                            <div class="text-xs text-yellow-400 mt-1">2 days left</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">200</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div id="leaderboard-tab" class="tab-content">
+            <div class="py-4">
+                <h2 class="text-lg font-bold mb-4">Global Leaderboard</h2>
+                
+                <div class="flex mb-4">
+                    <button class="flex-1 py-2 border-b-2 border-blue-500 text-blue-500 font-medium">Global</button>
+                    <button class="flex-1 py-2 border-b-2 border-gray-700 text-gray-400">Friends</button>
+                    <button class="flex-1 py-2 border-b-2 border-gray-700 text-gray-400">Weekly</button>
+                </div>
+                
+                <div class="leaderboard-item">
+                    <div class="flex items-center">
+                        <div class="rank rank-1">1</div>
+                        <div>
+                            <h3 class="font-medium">CryptoKing</h3>
+                            <p class="text-xs text-gray-400">Level 32</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">242,586</span>
+                    </div>
+                </div>
+                
+                <div class="leaderboard-item">
+                    <div class="flex items-center">
+                        <div class="rank rank-2">2</div>
+                        <div>
+                            <h3 class="font-medium">TapMaster99</h3>
+                            <p class="text-xs text-gray-400">Level 29</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">198,342</span>
+                    </div>
+                </div>
+                
+                <div class="leaderboard-item">
+                    <div class="flex items-center">
+                        <div class="rank rank-3">3</div>
+                        <div>
+                            <h3 class="font-medium">BlockchainBoss</h3>
+                            <p class="text-xs text-gray-400">Level 27</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">176,921</span>
+                    </div>
+                </div>
+                
+                <div class="leaderboard-item">
+                    <div class="flex items-center">
+                        <div class="rank">4</div>
+                        <div>
+                            <h3 class="font-medium">CoinCollector</h3>
+                            <p class="text-xs text-gray-400">Level 25</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">152,478</span>
+                    </div>
+                </div>
+                
+                <div class="leaderboard-item">
+                    <div class="flex items-center">
+                        <div class="rank">5</div>
+                        <div>
+                            <h3 class="font-medium">TapTitan</h3>
+                            <p class="text-xs text-gray-400">Level 23</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span class="font-bold">137,654</span>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-3 bg-blue-900 bg-opacity-20 rounded-lg border border-blue-800">
+                    <div class="flex items-center">
+                        <div class="rank bg-blue-700">42</div>
+                        <div class="ml-2">
+                            <h3 class="font-medium">You</h3>
+                            <p class="text-xs text-gray-400">Level 8</p>
+                        </div>
+                        <div class="ml-auto flex items-center">
+                            <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                            <span class="font-bold" id="your-balance">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upgrades Tab -->
+        <div id="upgrades-tab" class="tab-content">
+            <div class="py-4">
+                <h2 class="text-lg font-bold mb-4">Upgrades</h2>
+                
+                <div class="upgrade-item">
+                    <div class="flex items-center">
+                        <div class="upgrade-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Tap Power</h3>
+                            <p class="text-sm text-gray-400">Increase TAPS per tap</p>
+                            <div class="text-xs text-blue-400 mt-1">Level 1 (1 TAPS per tap)</div>
+                        </div>
+                    </div>
+                    <button id="upgrade-tap" class="px-3 py-1 bg-blue-600 rounded-md text-white text-sm flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span>50</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-item">
+                    <div class="flex items-center">
+                        <div class="upgrade-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Cooldown Reducer</h3>
+                            <p class="text-sm text-gray-400">Reduce session cooldown time</p>
+                            <div class="text-xs text-blue-400 mt-1">Level 0 (10 min cooldown)</div>
+                        </div>
+                    </div>
+                    <button class="px-3 py-1 bg-blue-600 rounded-md text-white text-sm flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span>100</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-item">
+                    <div class="flex items-center">
+                        <div class="upgrade-icon">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Session Extender</h3>
+                            <p class="text-sm text-gray-400">Increase session TAPS limit</p>
+                            <div class="text-xs text-blue-400 mt-1">Level 0 (500 TAPS per session)</div>
+                        </div>
+                    </div>
+                    <button class="px-3 py-1 bg-blue-600 rounded-md text-white text-sm flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span>150</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-item">
+                    <div class="flex items-center">
+                        <div class="upgrade-icon">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Daily Bonus</h3>
+                            <p class="text-sm text-gray-400">Increase daily login reward</p>
+                            <div class="text-xs text-blue-400 mt-1">Level 0 (10 TAPS per day)</div>
+                        </div>
+                    </div>
+                    <button class="px-3 py-1 bg-blue-600 rounded-md text-white text-sm flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span>200</span>
+                    </button>
+                </div>
+                
+                <h2 class="text-lg font-bold mt-6 mb-4">Boosters</h2>
+                
+                <div class="upgrade-item">
+                    <div class="flex items-center">
+                        <div class="upgrade-icon bg-purple-800">
+                            <i class="fas fa-rocket text-pink-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">2x Booster</h3>
+                            <p class="text-sm text-gray-400">Double TAPS for 1 hour</p>
+                        </div>
+                    </div>
+                    <button class="px-3 py-1 bg-pink-600 rounded-md text-white text-sm flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span>300</span>
+                    </button>
+                </div>
+                
+                <div class="upgrade-item">
+                    <div class="flex items-center">
+                        <div class="upgrade-icon bg-purple-800">
+                            <i class="fas fa-fire text-orange-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">Auto Tapper</h3>
+                            <p class="text-sm text-gray-400">Automatically tap 10 times/min for 30 min</p>
+                        </div>
+                    </div>
+                    <button class="px-3 py-1 bg-orange-600 rounded-md text-white text-sm flex items-center">
+                        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                        <span>500</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral Tab -->
+        <div id="referral-tab" class="tab-content">
+            <div class="py-4">
+                <h2 class="text-lg font-bold mb-4">Refer Friends</h2>
+                
+                <div class="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 mb-6">
+                    <h3 class="font-bold mb-2">Invite friends and earn rewards!</h3>
+                    <p class="text-sm text-gray-300 mb-4">For each friend who joins using your referral code, you'll receive a bonus of 100 TAPS and 5% of their earnings!</p>
+                    
+                    <div class="bg-gray-800 bg-opacity-50 p-3 rounded-md mb-4 flex items-center justify-between">
+                        <span class="text-gray-300 font-mono">TapSwap_42XYZ</span>
+                        <button class="text-blue-400">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    
+                    <button class="w-full py-2 bg-blue-600 rounded-md text-white font-medium">
+                        Share Referral Link
+                    </button>
+                </div>
+                
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">Your Referrals</h3>
+                        <span class="text-sm text-gray-400">Total: 2</span>
+                    </div>
+                    
+                    <div class="referral-item">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-900 rounded-full flex items-center justify-center mr-3">
+                                <span class="text-sm">JD</span>
+                            </div>
+                            <div>
+                                <h4 class="font-medium">JohnDoe</h4>
+                                <p class="text-xs text-gray-400">Joined 2 days ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                            <span class="font-bold">+125</span>
+                        </div>
+                    </div>
+                    
+                    <div class="referral-item">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-green-900 rounded-full flex items-center justify-center mr-3">
+                                <span class="text-sm">AS</span>
+                            </div>
+                            <div>
+                                <h4 class="font-medium">AliceSmith</h4>
+                                <p class="text-xs text-gray-400">Joined 5 days ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="Coins" class="w-4 h-4 mr-1">
+                            <span class="font-bold">+210</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="profile-tab" class="tab-content">
+            <div class="py-4">
+                <div class="flex items-center mb-6">
+                    <div class="profile-avatar mr-4">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg">TapSwapper</h2>
+                        <div class="flex items-center mt-1">
+                            <span class="level-badge mr-2">Level 8</span>
+                            <span class="text-sm text-gray-400">Joined 2 weeks ago</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-400">Level Progress</span>
+                        <span class="text-sm">65%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%"></div>
+                    </div>
+                </div>
+                
+                <div class="profile-stats mb-6">
+                    <h3 class="font-bold mb-3">Statistics</h3>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Total TAPS Earned</span>
+                        <span class="font-bold" id="total-earned">0</span>
+                    </div>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Total Taps</span>
+                        <span class="font-bold" id="total-taps">0</span>
+                    </div>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Highest Session</span>
+                        <span class="font-bold">500</span>
+                    </div>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Completed Challenges</span>
+                        <span class="font-bold">7/20</span>
+                    </div>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Referral Earnings</span>
+                        <span class="font-bold">335</span>
+                    </div>
+                </div>
+                
+                <div class="profile-stats">
+                    <h3 class="font-bold mb-3">Account</h3>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Connected Wallet</span>
+                        <span class="text-blue-400 text-sm">Connect</span>
+                    </div>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">TON Balance</span>
+                        <span class="font-bold">0.00</span>
+                    </div>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Telegram</span>
+                        <span class="font-bold">Connected</span>
+                    </div>
+                    
+                    <div class="stats-item">
+                        <span class="text-gray-400">Airdrop Eligibility</span>
+                        <div class="flex items-center">
+                            <span class="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
+                            <span class="font-bold">Eligible</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav flex justify-between items-center px-2 py-1">
+        <div class="nav-item active" data-tab="tap-tab">
+            <i class="fas fa-hand-pointer"></i>
+            <span>Tap</span>
+        </div>
+        <div class="nav-item" data-tab="challenges-tab">
+            <i class="fas fa-tasks"></i>
+            <span>Challenges</span>
+        </div>
+        <div class="nav-item" data-tab="leaderboard-tab">
+            <i class="fas fa-trophy"></i>
+            <span>Leaderboard</span>
+        </div>
+        <div class="nav-item" data-tab="upgrades-tab">
+            <i class="fas fa-arrow-up"></i>
+            <span>Upgrades</span>
+        </div>
+        <div class="nav-item" data-tab="referral-tab">
+            <i class="fas fa-users"></i>
+            <span>Refer</span>
+        </div>
+        <div class="nav-item" data-tab="profile-tab">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let balance = localStorage.getItem('balance') ? parseInt(localStorage.getItem('balance')) : 0;
+        let totalTaps = localStorage.getItem('totalTaps') ? parseInt(localStorage.getItem('totalTaps')) : 0;
+        let tapValue = localStorage.getItem('tapValue') ? parseInt(localStorage.getItem('tapValue')) : 1;
+        let sessionTaps = 0;
+        let maxSessionTaps = 500;
+        let upgradeTapCost = 50;
+        
+        // DOM elements
+        const balanceDisplay = document.getElementById('balance');
+        const yourBalanceDisplay = document.getElementById('your-balance');
+        const totalEarnedDisplay = document.getElementById('total-earned');
+        const totalTapsDisplay = document.getElementById('total-taps');
+        const sessionProgressDisplay = document.getElementById('session-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const coinElement = document.getElementById('coin');
+        const upgradeTapButton = document.getElementById('upgrade-tap');
+        
+        // Initialize displays
+        updateDisplays();
+        
+        // Tab navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const tabId = item.getAttribute('data-tab');
+                
+                // Update active tab
+                navItems.forEach(navItem => navItem.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Show corresponding content
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Coin tap functionality
+        coinElement.addEventListener('click', handleCoinTap);
+        
+        function handleCoinTap(e) {
+            if (sessionTaps >= maxSessionTaps) {
+                showCooldownMessage();
+                return;
+            }
+            
+            // Create ripple effect
+            createRipple(e);
+            
+            // Add tap value to balance
+            balance += tapValue;
+            sessionTaps += tapValue;
+            totalTaps++;
+            
+            // Save to localStorage
+            localStorage.setItem('balance', balance);
+            localStorage.setItem('totalTaps', totalTaps);
+            
+            // Update displays
+            updateDisplays();
+            
+            // Animate coin
+            coinElement.classList.add('animate');
+            setTimeout(() => {
+                coinElement.classList.remove('animate');
+            }, 500);
+        }
+        
+        function createRipple(e) {
+            const coin = e.currentTarget;
+            const circle = document.createElement('div');
+            const diameter = Math.max(coin.clientWidth, coin.clientHeight);
+            const radius = diameter / 2;
+            
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `0`;
+            circle.style.top = `0`;
+            circle.classList.add('coin-ripple');
+            
+            coin.appendChild(circle);
+            
+            circle.animate([
+                { transform: 'scale(0)', opacity: 1 },
+                { transform: 'scale(1.5)', opacity: 0 }
+            ], {
+                duration: 600,
+                easing: 'ease-out'
+            });
+            
+            setTimeout(() => {
+                circle.remove();
+            }, 600);
+        }
+        
+        function updateDisplays() {
+            balanceDisplay.textContent = formatNumber(balance);
+            yourBalanceDisplay.textContent = formatNumber(balance);
+            totalEarnedDisplay.textContent = formatNumber(balance);
+            totalTapsDisplay.textContent = formatNumber(totalTaps);
+            sessionProgressDisplay.textContent = `${sessionTaps}/${maxSessionTaps}`;
+            
+            // Update progress bar
+            const progressPercentage = (sessionTaps / maxSessionTaps) * 100;
+            progressFill.style.width = `${Math.min(progressPercentage, 100)}%`;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+        
+        function showCooldownMessage() {
+            alert('Session limit reached! Take a break and come back later.');
+        }
+        
+        // Upgrade functionality
+        upgradeTapButton.addEventListener('click', () => {
+            if (balance >= upgradeTapCost) {
+                balance -= upgradeTapCost;
+                tapValue++;
+                upgradeTapCost = Math.floor(upgradeTapCost * 1.5);
+                
+                localStorage.setItem('balance', balance);
+                localStorage.setItem('tapValue', tapValue);
+                
+                upgradeTapButton.querySelector('span').textContent = upgradeTapCost;
+                document.querySelector('#upgrades-tab .text-blue-400').textContent = `Level ${tapValue} (${tapValue} TAPS per tap)`;
+                
+                updateDisplays();
+            } else {
+                alert('Not enough TAPS to upgrade!');
+            }
+        });
+        
+        // Reset session if needed (for demo purposes)
+        setInterval(() => {
+            if (Math.random() > 0.95 && sessionTaps >= maxSessionTaps) {
+                sessionTaps = 0;
+                updateDisplays();
+            }
+        }, 10000);
+    </script>
+</body>
+</html>
